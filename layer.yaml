@@ -1,0 +1,6 @@
+includes:
+   - 'interface:kubernetes-cni'
+   - 'layer:basic'
+   - 'layer:status'
+   - 'layer:leadership'
+repo: https://github.com/juju-solutions/cilium-tbd.git

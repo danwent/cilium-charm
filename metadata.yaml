@@ -1,0 +1,18 @@
+name: cilium
+summary: eBPF-powered Networking, Observability, and Security for Kubernetes
+maintainers:
+  - Cilium Team <dan@cilium.io> 
+description: |
+  Cilium is an open source project for eBPF-powered networking, observability
+  and security for kubgernetes.   Learn more at cilium.io .  
+series:
+  - focal
+  - bionic
+  - xenial
+subordinate: true
+tags:
+  - networking
+requires:
+  cni:
+    interface: kubernetes-cni
+    scope: container

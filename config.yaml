@@ -1,0 +1,6 @@
+options:
+  cilium-agent-image:
+    type: string
+    default: quay.io/cilium/cilium:v1.9.1
+    description: |
+      The image id to use for the cilium agent (currently ignored).
