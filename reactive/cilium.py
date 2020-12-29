@@ -1,3 +1,4 @@
+import json
 import os
 import traceback
 from shlex import split
@@ -34,12 +35,16 @@ def configure_cni():
     ''' Configure Cilium CNI. '''
     status.maintenance('Configuring Cilium CNI')
 
-    # Mount BPF filesystem
-    check_output(["sudo", "mount", "bpffs", "-t", "bpf", "/sys/fs/bpf"])
+    try:
+        # Mount BPF filesystem
+        check_output(["sudo", "mount", "bpffs", "-t", "bpf", "/sys/fs/bpf"])
 
-    # TODO: would be better to stop the default k8s 
-    # charm from setting up FAN networking in the first place
-    check_output(["sudo", "fanctl", "down", "-a"]) 
+        # TODO: would be better to stop the default k8s 
+        # charm from setting up FAN networking in the first place
+        check_output(["sudo", "fanctl", "down", "-a"]) 
+    except CalledProcessError as e:
+        status.waiting('Error preparing node for cilium deployment')
+        log(str(e))
 
     os.makedirs('/etc/cni/net.d', exist_ok=True)
     cni = endpoint_from_flag('cni.configured')
@@ -48,10 +53,12 @@ def configure_cni():
         'kubeconfig_path': cni_config['kubeconfig_path'],
     }
     render('04-cilium.conf', '/etc/cni/net.d/04-cilium.conf', context)
+    # this call must happen on the kubernetes-master nodes for them to 
+    # understand that a CNI is available.  
     cni.set_config(cidr='10.0.0.0/8', cni_conf_file='04-cilium.conf')
     set_state('cilium.cni.configured')
 
-@when('leadership.is_leader', 'cilium.cni.configured')
+@when('leadership.is_leader')
 @when_not('cilium.ds.deployed')
 def deploy_cilium_daemonset():
     ''' Deploy the Cilium daemonset. '''
@@ -76,12 +83,26 @@ def set_cilium_version():
     application_version_set("1.9.1")
     set_state('cilium.version.set')
 
+@when('cni.is-worker')
 @when('cilium.cni.configured')
+@when_not('cilium.cni.running')
+def set_running():
+    '''Confirm that cilium-agent pods are running on worker nodes'''
+    try: 
+        check_output(["curl","--unix-socket","/var/run/cilium/cilium.sock","-H \"Brief:true\"","http://localhost//v1/healthz"])
+        set_state('cilium.cni.running')
+        status.active('Cilium CNI is running')
+    except CalledProcessError as e:
+        status.waiting('Unable to contact local cilium socket on k8s nodes.')
+        log(str(e))
+
+
+@when_any('cilium.cni.running', 'cni.is-master')
 @when_not('cilium.cni.available')
 def set_available():
     ''' Indicate to the CNI provider that we're ready. '''
     set_state('cilium.cni.available')
-    status.active('Cilium CNI configured')
+    status.active('Cilium CNI is available.')
 
 @hook('stop')
 def stop():

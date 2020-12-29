@@ -51,6 +51,11 @@ Then deploy Charmed Kubernetes with your locally built cilium charm:
 juju deploy charmed-kubernetes --overlay local-cilium-cni-overlay.yaml
 ```
 
+Deploy the following set of pods and confirm that all pods become 1/1 ready status: 
+
+kubectl  apply -f https://raw.githubusercontent.com/cilium/cilium/master/examples/kubernetes/connectivity-check/connectivity-check.yaml
+
+
 ## Helpful links
 
 * [Getting Started with charm development](https://jaas.ai/docs/getting-started-with-charm-development)

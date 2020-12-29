@@ -11,7 +11,7 @@ applications:
     annotations:
       gui-x: '475'
       gui-y: '605'
-    charm: /tmp/charm-builds/cilium
+    charm: cs:~cilium/cilium-3
   kubernetes-master:
     options: 
       allow-privileged: "true"
